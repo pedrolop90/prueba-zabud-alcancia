@@ -1,0 +1,61 @@
+plugins {
+    id 'org.springframework.boot' version '2.3.4.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'application'
+    id 'jacoco'
+}
+
+project.ext.nameClass = "com.prubea.zabud.alcancia.AlcanciaApplication"
+
+group = 'com.prueba.zabud'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+apply plugin: 'jacoco'
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.3.4.RELEASE'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.3.4.RELEASE'
+    compileOnly 'org.projectlombok:lombok:1.18.16'
+    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+    runtimeOnly 'com.h2database:h2:1.4.200'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.3.4.RELEASE'
+
+    //
+    compile group: 'org.hibernate', name: 'hibernate-gradle-plugin', version: '5.4.10.Final'
+    compile 'log4j:log4j:1.2.17'
+    compile 'org.hibernate:hibernate-core:5.2.9.Final'
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-core:1.10.19'
+
+    //
+    implementation "io.springfox:springfox-boot-starter:3.0.0"
+    compile "io.springfox:springfox-swagger-ui:3.0.0"
+
+    //
+    implementation 'org.springframework.boot:spring-boot-starter-security:2.3.4.RELEASE'
+
+    implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.10.7'
+    implementation group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.10.7'
+    implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.10.7'
+}
+
+mainClassName = project.ext.nameClass
+
+test {
+    useJUnit()
+
+    maxHeapSize = '1G'
+}

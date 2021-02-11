@@ -1,0 +1,8 @@
+version: '3'
+services:
+  alcancia:
+    build:
+      context: .
+    image: alcancia-prueba:1.0
+    ports:
+    - 8080:8080
