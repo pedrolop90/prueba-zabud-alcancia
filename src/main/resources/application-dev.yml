@@ -11,6 +11,14 @@ spring:
     console:
       enabled: true
       path: /h2
+      settings:
+        webAllowOthers: true
   jpa:
     showSql: true
     ddlAuto: create
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

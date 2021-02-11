@@ -2,9 +2,6 @@ on:
   push:
     branches:
       - develop
-  pull_request:
-    branches:
-      - develop
 name: pipeline despliegue
 jobs:
   terraform:
@@ -124,5 +121,5 @@ jobs:
           script: |
             sudo docker login -u ${{ env.DOCKERHUB_USUARIO }} -p ${{ env.DOCKERHUB_CONTRASENIA }}
             sudo docker rm -f alcancia-prueba
-            sudo docker run -p ${{ env.PUERTO_APLICACION }}:${{ env.PUERTO_APLICACION }} --name alcancia-prueba -d ${{ env.DOCKERHUB_REPOSITORIO }}:${{ github.sha }}
+            sudo docker run -p ${{ env.PUERTO_APLICACION }}:${{ env.PUERTO_APLICACION }} --name alcancia-prueba -e PROF="dev" -d ${{ env.DOCKERHUB_REPOSITORIO }}:${{ github.sha }}
         continue-on-error: true

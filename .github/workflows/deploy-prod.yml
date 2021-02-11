@@ -1,0 +1,125 @@
+on:
+  push:
+    branches:
+      - master
+name: pipeline despliegue
+jobs:
+  terraform:
+    name: despliegue a al ambiente produccion
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    env:
+      working-directory: ./terraform
+      TIEMPO-ESPERA-APROVISIONAMIENTO: 120
+      TERRAFORM_TFVARS_BASE64: ${{ secrets.TERRAFORM_TFVARS_BASE64 }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+      AWS_S3_REGION: ${{ secrets.AWS_S3_REGION }}
+      DOCKERHUB_USUARIO: ${{ secrets.DOCKERHUB_USUARIO }}
+      DOCKERHUB_CONTRASENIA: ${{ secrets.DOCKERHUB_CONTRASENIA }}
+      DOCKERHUB_REPOSITORIO: ${{ secrets.DOCKERHUB_REPOSITORIO }}
+      USUARIO_EC2: ${{ secrets.USUARIO_EC2 }}
+      LLAVE_PRIVADA_EC2: ${{ secrets.LLAVE_PRIVADA_EC2 }}
+      PUERTO_APLICACION: ${{ secrets.PUERTO_APLICACION }}
+    steps:
+      - name: 'Bajando codigo al servidor'
+        uses: actions/checkout@master
+      - uses: hashicorp/setup-terraform@v1
+      - name: 'Ejecutando Terraform fmt'
+        id: fmt
+        working-directory: ${{ env.working-directory }}
+        run: terraform fmt -check
+      - name: 'Ejecutando Terraform Init'
+        id: init
+        working-directory: ${{ env.working-directory }}
+        run: terraform init
+      - name: 'Ejecutando Terraform Validate'
+        id: validate
+        working-directory: ${{ env.working-directory }}
+        run: terraform validate -no-color
+
+      - name: 'Bajando estado de Terraform'
+        uses: prewk/s3-cp-action@master
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_S3_REGION }}
+          SOURCE: 's3://${{ env.AWS_S3_BUCKET }}/terraform.tfstate'
+          DEST: '${{ env.working-directory }}/terraform.tfstate'
+        continue-on-error: true
+      - name: 'Dando permisos a estado de Terraform'
+        working-directory: ${{ env.working-directory }}
+        run: sudo chmod 777 terraform.tfstate
+
+      - name: 'Generando tfvars al entorno'
+        working-directory: ${{ env.working-directory }}
+        run: echo "${{ env.TERRAFORM_TFVARS_BASE64 }}" | base64 -d > ./terraform.tfvars
+
+      - name: 'Ejecutando Terraform Plan'
+        id: terraform-plan
+        working-directory: ${{ env.working-directory }}
+        run: terraform plan -no-color
+
+      - name: 'Ejecutando Terraform Apply'
+        env:
+          data-salida: ${{ steps.terraform-plan.outputs.stdout }}
+        id: apply
+        if: ${{ !contains(steps.terraform-plan.outputs.stdout, 'No changes. Infrastructure is up-to-date') }}
+        working-directory: ${{ env.working-directory }}
+        run: terraform apply -auto-approve
+
+      - name: 'Ejecutando Terraform Output'
+        id: terraform-output
+        run: terraform output -json
+        working-directory: ${{ env.working-directory }}
+
+      - name: 'Subiendo Archivos a S3'
+        uses: reggionick/s3-deploy@v3
+        with:
+          folder: ${{ env.working-directory }}
+          bucket: ${{ env.AWS_S3_BUCKET }}
+          bucket-region: ${{ env.AWS_S3_REGION }}
+          invalidation: /
+          delete-removed: true
+          no-cache: true
+          private: true
+
+      - name: 'Login Dockerhub'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ env.DOCKERHUB_USUARIO }}
+          password: ${{ env.DOCKERHUB_CONTRASENIA }}
+      - name: 'Construyendo Imagen y Subiendo a Dockerhub'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          repository: ${{ env.DOCKERHUB_REPOSITORIO }}
+          tag_with_ref: true
+          tag_with_sha: true
+          tags: "${{ env.DOCKERHUB_REPOSITORIO }}:${{ github.sha }}"
+          push: true
+
+      #Esta validacion es porque el user-data se demora x tiempo en aprovisionar la maquina con la receta que hayamos
+      #definido entonces debemos tener en cuenta ese tiempo, quizas una implementacion mas directa con ansible o chef
+      #nos haria la vida mas facil, pero con user-data esta muy bien la verdad.
+      - name: 'Esperando Aprovisionamiento'
+        uses: jakejarvis/wait-action@master
+        if: ${{ !contains(steps.terraform-plan.outputs.stdout, 'No changes. Infrastructure is up-to-date') }}
+        with:
+          time: "${{ env.TIEMPO-ESPERA-APROVISIONAMIENTO }}s"
+
+      - name: 'Ejecutando Comandos remotos SSH'
+        uses: appleboy/ssh-action@master
+        env:
+          IP_INSTANCE: ${{ fromJson(steps.terraform-output.outputs.stdout).instance_public_ip.value }}
+        with:
+          host: ${{ env.IP_INSTANCE }}
+          username: ${{ env.USUARIO_EC2 }}
+          key: ${{ env.LLAVE_PRIVADA_EC2 }}
+          script: |
+            sudo docker login -u ${{ env.DOCKERHUB_USUARIO }} -p ${{ env.DOCKERHUB_CONTRASENIA }}
+            sudo docker rm -f alcancia-prueba
+            sudo docker run -p ${{ env.PUERTO_APLICACION }}:${{ env.PUERTO_APLICACION }} --name alcancia-prueba -e PROF="prod" -d ${{ env.DOCKERHUB_REPOSITORIO }}:${{ github.sha }}
+        continue-on-error: true

@@ -1,5 +1,5 @@
 ARG BUILD_IMAGE=gradle:6.7.1-jdk8
-ARG RUNTIME_IMAGE=openjdk:11-jdk-slim
+ARG RUNTIME_IMAGE=openjdk:8-jdk-slim
 
 FROM ${BUILD_IMAGE} as dependencies
 ENV APP_HOME=/

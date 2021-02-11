@@ -19,3 +19,9 @@ jwt:
   secretKey: ${KEYSECRET_SECURITY:SjLNct19ONkWJIw4OW4EFz8V8KUNLiQ9CU_We2nUsLg}
   prefix: ${PREFIX_SECURITY:Bearer}
   expiraInDays: ${EXPIRA_DAYS_SECURITY:14}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        exclude: info

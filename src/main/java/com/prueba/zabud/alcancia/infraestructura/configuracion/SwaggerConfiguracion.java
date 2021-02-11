@@ -15,11 +15,13 @@ import springfox.documentation.spring.web.plugins.Docket;
 @Profile("dev")
 public class SwaggerConfiguracion {
 
+	private static final String RUTA_PRINCIPAL = "com.prueba.zabud.alcancia";
+
 	@Bean
 	public Docket api() {
 		return new Docket(DocumentationType.SWAGGER_2)
 				.select()
-				.apis(RequestHandlerSelectors.basePackage("com.prueba.zabud.alcancia"))
+				.apis(RequestHandlerSelectors.basePackage(RUTA_PRINCIPAL))
 				.paths(PathSelectors.any())
 				.build();
 	}

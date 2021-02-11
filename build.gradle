@@ -5,11 +5,13 @@ plugins {
     id 'jacoco'
 }
 
-project.ext.nameClass = "com.prubea.zabud.alcancia.AlcanciaApplication"
+project.ext.nameClass = "com.prueba.zabud.alcancia.AlcanciaApplication"
 
 group = 'com.prueba.zabud'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+
+sourceCompatibility = '8'
+targetCompatibility = '8'
 
 
 configurations {
@@ -47,9 +49,12 @@ dependencies {
     //
     implementation 'org.springframework.boot:spring-boot-starter-security:2.3.4.RELEASE'
 
-    implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.10.7'
-    implementation group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.10.7'
-    implementation group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.10.7'
+    implementation 'io.jsonwebtoken:jjwt-api:0.10.7'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.10.7'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.10.7'
+
+    //
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:2.3.4.RELEASE'
 }
 
 mainClassName = project.ext.nameClass

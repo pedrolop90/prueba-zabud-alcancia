@@ -37,7 +37,11 @@ public class AlcanciaDaoImpl implements AlcanciaCustomDao {
 										)
 						)
 		);
+		Integer result = resultQuery.getSingleResult();
+		if (result == null) {
+			result = 0;
+		}
 		return Optional
-				.of(resultQuery.getSingleResult());
+				.of(result);
 	}
 }
