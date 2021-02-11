@@ -22,6 +22,7 @@ jobs:
       USUARIO_EC2: ${{ secrets.USUARIO_EC2 }}
       LLAVE_PRIVADA_EC2: ${{ secrets.LLAVE_PRIVADA_EC2 }}
       PUERTO_APLICACION: ${{ secrets.PUERTO_APLICACION }}
+      PROFILE: "prod"
     steps:
       - name: 'Bajando codigo al servidor'
         uses: actions/checkout@master
@@ -121,5 +122,5 @@ jobs:
           script: |
             sudo docker login -u ${{ env.DOCKERHUB_USUARIO }} -p ${{ env.DOCKERHUB_CONTRASENIA }}
             sudo docker rm -f alcancia-prueba
-            sudo docker run -p ${{ env.PUERTO_APLICACION }}:${{ env.PUERTO_APLICACION }} --name alcancia-prueba -e PROF="prod" -d ${{ env.DOCKERHUB_REPOSITORIO }}:${{ github.sha }}
+            sudo docker run -p ${{ env.PUERTO_APLICACION }}:${{ env.PUERTO_APLICACION }} --name alcancia-prueba -e PROF="${{ env.PROFILE }}" -d ${{ env.DOCKERHUB_REPOSITORIO }}:${{ github.sha }}
         continue-on-error: true
